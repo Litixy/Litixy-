@@ -726,9 +726,6 @@ async function login(){
   const v=$("#passwordInput").value;
   if(!v)return;
   let ok=(await digestText(v))===ADMIN_PASSWORD_DIGEST;
-  if(syncApiEndpoint){
-    try{await authenticateSyncApi(v);ok=true}catch(e){ok=false}
-  }
   if(ok){clearAuthFails();writeAuth();$("#passwordInput").value="";$("#login").classList.remove("open");openAdmin();return}
   const count=f.count+1;const next={count,lockedUntil:count>=5?Date.now()+AUTH_LOCK_MS:0};setAuthFails(next);$("#passwordInput").value="";$("#loginError").textContent="パスワードが正しくありません。";if(next.lockedUntil)updateLoginLock(next.lockedUntil);
 }
@@ -941,7 +938,7 @@ function setSyncUI(status,detail=""){
   if(connect)connect.disabled=status==="connecting"||status==="connected";
   if(disconnect)disconnect.disabled=!(status==="connecting"||status==="connected");
 }
-function loadSyncEndpoint(){const input=$("#syncEndpoint");if(!input)return;syncApiEndpoint=(localStorage.getItem(SYNC_CONFIG_KEY)||"").trim();if(!syncApiEndpoint && /^https?:$/.test(location.protocol)) syncApiEndpoint=location.origin;input.value=syncApiEndpoint}
+function loadSyncEndpoint(){const input=$("#syncEndpoint");if(!input)return;syncApiEndpoint="";localStorage.removeItem(SYNC_CONFIG_KEY);input.value=""}
 function saveSyncEndpoint(){const input=$("#syncEndpoint");syncApiEndpoint=(input?.value||"").trim().replace(/\/$/,"");if(syncApiEndpoint)localStorage.setItem(SYNC_CONFIG_KEY,syncApiEndpoint);else localStorage.removeItem(SYNC_CONFIG_KEY)}
 async function syncFetch(path,options={}){if(!syncApiEndpoint)throw new Error("API endpoint is not configured");const headers={"Content-Type":"application/json",...(options.headers||{})};if(syncAuthToken)headers.Authorization=`Bearer ${syncAuthToken}`;const r=await fetch(syncApiEndpoint+path,{...options,headers});if(r.status===401){syncAuthToken="";sessionStorage.removeItem("litixy-api-token");throw new Error("API認証が必要です")}if(!r.ok)throw new Error(`HTTP ${r.status}`);return r.status===204?null:r.json()}
 function scheduleSyncSave(next){clearTimeout(syncSaveTimer);if(!syncApiEndpoint)return;syncSaveTimer=setTimeout(()=>pushDraft(next),2500)}
