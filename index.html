@@ -363,7 +363,7 @@ const LOGO="data:image/webp;base64,UklGRqwqAABXRUJQVlA4IKAqAAAwzACdASoAAgACPj0ej
    logo は画像URL。空欄なら「LX」プレースホルダーを表示。
    相対パス（例: images/app.png）や data:image/... も使用できます。
    ============================================================ */
-const LITIXY_PROJECTS = [
+const LITIXY_PROJECTS = window.LITIXY_PROJECTS = [
   {
     name:"SnapInk",
     url:"https://litixy.github.io/SnapInk",
@@ -1116,7 +1116,7 @@ function v22RenderProjects(){
   grid.innerHTML=ps.map(p=>{
     const src=p.mediaId?v22ResolveMedia(p.mediaId):(p.image||"");
     return `<a class="project-card" href="${esc(p.link||"#")}" ${/^https?:\/\//.test(p.link||"")?'target="_blank" rel="noopener"':''}>
-      <div class="project-card-media">${src?`<img src="${esc(src)}" alt="${esc(p.name||"")}">`:`<span class="project-placeholder">LX</span>`}</div>
+      <div class="project-card-media">${src?`<img src="${esc(src)}" alt="${esc(p.name||"")}" onerror="this.style.display='none';this.parentElement.insertAdjacentHTML('beforeend','<span class=&quot;project-placeholder&quot;>LX</span>')">`:`<span class="project-placeholder">LX</span>`}</div>
       <div class="project-card-body"><div class="project-card-kicker">${esc(p.category||"Project")}</div><h3>${esc(p.name||"Untitled")}</h3><p>${esc(p.description||"")}</p><div class="project-card-link">開く ↗</div></div>
     </a>`;
   }).join("");
@@ -1413,6 +1413,33 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(err => console.warn('PWA registration failed:', err));
   });
 }
+</script>
+
+<script>
+(function(){
+  function renderLitixyProjectsDirect(){
+    const grid=document.getElementById('projectGrid');
+    const empty=document.getElementById('projectEmpty');
+    const projects=Array.isArray(window.LITIXY_PROJECTS)?window.LITIXY_PROJECTS:[];
+    if(!grid||!empty)return;
+    grid.innerHTML=projects.map(function(p){
+      const name=String(p.name||'Untitled');
+      const url=String(p.url||p.link||'#');
+      const logo=String(p.logo||p.image||'');
+      const desc=String(p.description||'');
+      const cat=String(p.category||'Project');
+      const esc=function(v){return String(v).replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];});};
+      return '<a class="project-card" href="'+esc(url)+'" '+(/^https?:\/\//.test(url)?'target="_blank" rel="noopener"':'')+'>'+
+        '<div class="project-card-media">'+(logo?'<img src="'+esc(logo)+'" alt="'+esc(name)+'" onerror="this.style.display=\'none\';this.parentElement.insertAdjacentHTML(\'beforeend\',\'<span class=&quot;project-placeholder&quot;>LX</span>\')">':'<span class="project-placeholder">LX</span>')+'</div>'+
+        '<div class="project-card-body"><div class="project-card-kicker">'+esc(cat)+'</div><h3>'+esc(name)+'</h3><p>'+esc(desc)+'</p><div class="project-card-link">開く ↗</div></div>'+
+      '</a>';
+    }).join('');
+    empty.style.display=projects.length?'none':'block';
+  }
+  window.addEventListener('DOMContentLoaded',renderLitixyProjectsDirect,{once:true});
+  window.addEventListener('load',renderLitixyProjectsDirect,{once:true});
+  setTimeout(renderLitixyProjectsDirect,300);
+})();
 </script>
 </body>
 </html>
